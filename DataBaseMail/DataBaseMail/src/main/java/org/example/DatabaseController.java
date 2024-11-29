@@ -1,6 +1,7 @@
 package org.example;
 
 import connection.Connect;
+import javafx.scene.layout.FlowPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import mail.Mail;
@@ -41,6 +42,10 @@ public class DatabaseController {
     private Button deselectAllButton;
     @FXML
     private Button attachFileButton;
+    @FXML
+    private FlowPane columnCheckboxContainer;
+    @FXML
+    private Label attachedFileLabel; // Etykieta do wyświetlania nazwy załącznika
     private File attachedFile;
     private final Connect connect = new Connect();
 
@@ -59,6 +64,46 @@ public class DatabaseController {
         deselectAllButton.setOnAction(event -> deselectAllRows());
         attachFileButton.setOnAction(event -> attachFile());
     }
+
+    private void generateColumnCheckboxes() {
+        columnCheckboxContainer.getChildren().clear();
+        TableColumnBase<?, ?>[] columns = tableView.getColumns().toArray(new TableColumnBase[0]);
+
+        System.out.println("Generowanie checkboxów dla kolumn:");
+        for (TableColumnBase<?, ?> column : columns) {
+            if ("Zaznacz".equals(column.getText())) {
+                continue; // Pomiń kolumnę "Zaznacz"
+            }
+            System.out.println("Kolumna: " + column.getText());
+            CheckBox checkBox = new CheckBox(column.getText());
+            checkBox.setSelected(true);
+            checkBox.setOnAction(event -> updateTableDataBasedOnSelection());
+            columnCheckboxContainer.getChildren().add(checkBox);
+        }
+    }
+
+
+
+    private void updateTableDataBasedOnSelection() {
+        List<String> selectedColumns = new ArrayList<>();
+        columnCheckboxContainer.getChildren().forEach(node -> {
+            if (node instanceof CheckBox) {
+                CheckBox checkBox = (CheckBox) node;
+                if (checkBox.isSelected()) {
+                    selectedColumns.add(checkBox.getText());
+                }
+            }
+        });
+
+        tableView.getColumns().forEach(column -> {
+            if ("Zaznacz".equals(column.getText())) {
+                column.setVisible(true); // Kolumna "Zaznacz" zawsze widoczna
+            } else {
+                column.setVisible(selectedColumns.contains(column.getText()));
+            }
+        });
+    }
+
 
     private void loadSchemas() {
         ObservableList<String> schemas = FXCollections.observableArrayList();
@@ -149,41 +194,65 @@ public class DatabaseController {
             tableView.setItems(data);
             tableView.getSelectionModel().setCellSelectionEnabled(false);
             tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // Generowanie checkboxów na podstawie kolumn
+            generateColumnCheckboxes();
         } catch (SQLException e) {
             System.err.println("Błąd podczas ładowania danych tabeli: " + e.getMessage());
         }
     }
 
+
     @FXML
     private void onExportToCSV() {
         String selectedTable = tableComboBox.getValue();
         String selectedSchema = schemaComboBox.getValue();
-        if (selectedTable != null && !selectedTable.isEmpty() && selectedSchema != null && !selectedSchema.isEmpty()) {
-            Export export = new Export();
-            List<ObservableList<Object>> selectedRows = new ArrayList<>();
-            for (ObservableList<Object> row : tableView.getItems()) {
-                SimpleBooleanProperty checkBoxProperty = (SimpleBooleanProperty) row.get(row.size() - 1);
-                if (checkBoxProperty.get()) {
-                    selectedRows.add(row);
+
+        // Pobierz zaznaczone kolumny z checkboxów
+        List<String> selectedColumns = new ArrayList<>();
+        columnCheckboxContainer.getChildren().forEach(node -> {
+            if (node instanceof CheckBox) {
+                CheckBox checkBox = (CheckBox) node;
+                if (checkBox.isSelected()) {
+                    selectedColumns.add(checkBox.getText());
                 }
             }
-            if (selectedRows.isEmpty()) {
-                Alert alert = new Alert(Alert.AlertType.WARNING);
-                alert.setTitle("Błąd");
-                alert.setHeaderText("Brak zaznaczonych wierszy");
-                alert.setContentText("Proszę zaznaczyć przynajmniej jeden wiersz przed eksportem.");
-                alert.showAndWait();
-                return;
-            }
-            export.exportSelectedRowsToCSV(selectedSchema, selectedTable, selectedRows);
-        } else {
+        });
+
+        // Sprawdź, czy są wybrane kolumny
+        if (selectedColumns.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Błąd");
-            alert.setHeaderText("Nie wybrano tabeli lub schematu");
-            alert.setContentText("Proszę wybrać tabelę i schemat przed eksportem.");
+            alert.setHeaderText("Brak wybranych kolumn");
+            alert.setContentText("Proszę wybrać przynajmniej jedną kolumnę do eksportu.");
             alert.showAndWait();
+            return;
         }
+
+        // Pobierz zaznaczone wiersze
+        List<ObservableList<Object>> selectedRows = new ArrayList<>();
+        for (ObservableList<Object> row : tableView.getItems()) {
+            SimpleBooleanProperty checkBoxProperty = (SimpleBooleanProperty) row.get(row.size() - 1);
+            if (checkBoxProperty.get()) {
+                selectedRows.add(row);
+            }
+        }
+
+        if (selectedRows.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.WARNING);
+            alert.setTitle("Błąd");
+            alert.setHeaderText("Brak zaznaczonych wierszy");
+            alert.setContentText("Proszę zaznaczyć przynajmniej jeden wiersz przed eksportem.");
+            alert.showAndWait();
+            return;
+        }
+
+        // Przekaż dane do klasy Export
+        Export export = new Export();
+        export.exportSelectedRowsToCSV(selectedSchema, selectedTable, selectedRows, selectedColumns, tableView.getColumns());
     }
+
+
 
     @FXML
     private void selectAllRows() {
@@ -231,13 +300,19 @@ public class DatabaseController {
         }
     }
 
+
+
     @FXML
     private void attachFile() {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Wybierz plik do załączenia");
         attachedFile = fileChooser.showOpenDialog(new Stage());
         if (attachedFile != null) {
-            System.out.println("Wybrano plik: " + attachedFile.getAbsolutePath());
+            // Wyświetl nazwę wybranego pliku w etykiecie
+            attachedFileLabel.setText("Załączony plik: " + attachedFile.getName());
+        } else {
+            // Jeśli użytkownik anulował wybór pliku
+            attachedFileLabel.setText("Nie wybrano pliku");
         }
     }
 }
