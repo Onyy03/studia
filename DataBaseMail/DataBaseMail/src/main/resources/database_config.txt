@@ -1,0 +1,4 @@
+driver=org.postgresql.Driver
+jdbc:postgresql://195.150.230.208:5432/2024_armatys_norbert
+user=2024_armatys_norbert
+password=Credemhi787

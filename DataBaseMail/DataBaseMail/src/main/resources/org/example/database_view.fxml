@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.stage.FileChooser?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml" fx:controller="org.example.DatabaseController">
+    <children>
+        <ComboBox fx:id="schemaComboBox" layoutX="20.0" layoutY="20.0" prefWidth="150.0" />
+        <ComboBox fx:id="tableComboBox" layoutX="180.0" layoutY="20.0" prefWidth="150.0" />
+        <TableView fx:id="tableView" layoutX="20.0" layoutY="60.0" prefHeight="400.0" prefWidth="960.0" />
+        <TextField fx:id="emailTextField" layoutX="20.0" layoutY="470.0" prefWidth="300.0" promptText="Wpisz adres e-mail odbiorcy" />
+        <TextField fx:id="emailSubjectField" layoutX="20.0" layoutY="510.0" prefWidth="300.0" promptText="Wpisz temat wiadomości" />
+        <TextArea fx:id="emailBodyArea" layoutX="20.0" layoutY="550.0" prefWidth="960.0" prefHeight="100.0" promptText="Wpisz treść wiadomości" />
+        <Button fx:id="exportToCSVButton" layoutX="810.0" layoutY="510.0" mnemonicParsing="false" text="Eksportuj do CSV" onAction="#onExportToCSV" />
+        <Button fx:id="sendEmailButton" layoutX="930.0" layoutY="510.0" mnemonicParsing="false" text="Wyślij" onAction="#sendEmails" />
+        <Button fx:id="attachFileButton" layoutX="350.0" layoutY="470.0" mnemonicParsing="false" text="Załącz plik" onAction="#attachFile" />
+        <Button fx:id="selectAllButton" layoutX="20.0" layoutY="660.0" mnemonicParsing="false" text="Zaznacz wszystkie" onAction="#selectAllRows" />
+        <Button fx:id="deselectAllButton" layoutX="150.0" layoutY="660.0" mnemonicParsing="false" text="Odznacz wszystkie" onAction="#deselectAllRows" />
+    </children>
+</AnchorPane>
